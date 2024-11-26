@@ -20,7 +20,7 @@ export default function UserMain() {
         {/* 1. Satır */}
         <View style={styles.row}>
           <View style={styles.item}>
-		  	<TouchableOpacity onPress={() => navigation.navigate('BloodTest')}>
+		  	<TouchableOpacity onPress={() => navigation.navigate('BloodTests')}>
             <Text>Tahlilleri görüntüle</Text>
 			</TouchableOpacity>
           </View>
