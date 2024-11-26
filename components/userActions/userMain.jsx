@@ -1,6 +1,6 @@
 import { useNavigation } from "@react-navigation/native";
 import React from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function UserMain() {
 	const navigation = useNavigation();
@@ -8,11 +8,12 @@ export default function UserMain() {
   return (
     <View style={styles.container}>
       <View style={styles.firstrow}>
-        <View>
-          <Text>Name:</Text>
-          <Text>Surname:</Text>
-          <Text>Age:</Text>
-          <Text>Sex:</Text>
+        <View style={styles.firstRowContent}>
+          <Image style={styles.imageContainer} source={require("../../assets/profile.jpg")} />
+          <Text style={styles.text}>Name:</Text>
+          <Text style={styles.text}>Surname:</Text>
+          <Text style={styles.text}>Age:</Text>
+          <Text style={styles.text}>Sex:</Text>
         </View>
       </View>
       <ScrollView style={styles.scrollView}>
@@ -44,10 +45,20 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   firstrow: {
+    flex:1,
     width: "100%",
     height: 300,
     justifyContent: "center",
-	alignItems:"center",
+    alignItems: "center",
+  },
+  firstRowContent: {
+    alignItems: "center",
+    textAlign:"center"
+  },
+  text:{
+    textAlign:"center",
+    fontWeight:"bold",
+    fontSize:20
   },
   row: {
     flexDirection: "row",
@@ -63,5 +74,11 @@ const styles = StyleSheet.create({
     borderRadius: 7,
     alignItems: "center",
     justifyContent: "center",
+  },
+  imageContainer:{
+    width:100,
+    height:100,
+    borderRadius:50,
+    marginBottom:10
   },
 });
