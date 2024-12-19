@@ -2,7 +2,7 @@ import { useNavigation } from "@react-navigation/native";
 import React from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-export default function DoctorScreen() {
+export default function DoctorMainScreen() {
   const navigation = useNavigation();
   return (
     <View style={styles.container}>
@@ -10,7 +10,7 @@ export default function DoctorScreen() {
         {/* 1. Satır */}
         <View style={styles.row}>
           <View style={styles.item}>
-            <TouchableOpacity onPress={() => navigation.navigate("")}>
+            <TouchableOpacity onPress={() => navigation.navigate("CreateGuide")}>
               <Text>Kılavuz Oluşturma</Text>
             </TouchableOpacity>
           </View>
@@ -22,7 +22,9 @@ export default function DoctorScreen() {
         {/* 2. Satır */}
         <View style={styles.row}>
           <View style={styles.item}>
-            <Text>Tahlilleri Listele</Text>
+          <TouchableOpacity onPress={() => navigation.navigate("ViewPatients")}>
+             <Text>Hasta Görüntüleme</Text>
+          </TouchableOpacity>
           </View>
           <View style={styles.item}>
             <Text>Tahlilleri Listele</Text>
