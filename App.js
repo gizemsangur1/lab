@@ -1,10 +1,6 @@
 import React from 'react';
-<<<<<<< HEAD
-import LoginScreen from './components/loginScreen'; 
-=======
 import LoginScreen from './screens/loginScreen/index'; 
 import RegisterScreen from './screens/registerScreen/index'; 
->>>>>>> gizem
 import UserMain from './components/userActions/userMain';
 import DoctorScreen from './screens/DoctorScreen';
 import BloodTests from './components/userActions/bloodTestResults';
@@ -19,10 +15,7 @@ export default function App() {
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Login">
         <Stack.Screen name="Login" component={LoginScreen} />
-<<<<<<< HEAD
-=======
         <Stack.Screen name="Register" component={RegisterScreen} />
->>>>>>> gizem
         <Stack.Screen name="UserMain" component={UserMain} />
         <Stack.Screen name="DoctorScreen" component={DoctorScreen} />
         <Stack.Screen name="BloodTests" component={BloodTests} />
