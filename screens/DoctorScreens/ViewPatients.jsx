@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { firestore } from "../../FirebaseConfig";
+import { calculateAge, formatDate } from "../../actions/generalFunctions";
 
 export default function ViewPatients() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -49,16 +50,8 @@ export default function ViewPatients() {
 	}
   };
   
-  const formatDate = (dateOfBirth) => {
-    if (!dateOfBirth) return "N/A";
+  
 
-    if (dateOfBirth.seconds) {
-      const date = new Date(dateOfBirth.seconds * 1000);
-      return date.toDateString();
-    }
-
-    return dateOfBirth.toString();
-  };
 
   return (
     <View style={styles.container}>
@@ -73,19 +66,7 @@ export default function ViewPatients() {
       </TouchableOpacity>
       <ScrollView style={styles.scrollView}>
         {filteredPatients.length > 0 ? (
-          filteredPatients.map((patient, index) => {
-            // Calculate age
-            const calculateAge = (dateOfBirth) => {
-              if (!dateOfBirth) return "N/A";
-              const birthDate = new Date(dateOfBirth.seconds * 1000);
-              const today = new Date();
-              let age = today.getFullYear() - birthDate.getFullYear();
-              const monthDiff = today.getMonth() - birthDate.getMonth();
-              if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-                age--;
-              }
-              return age;
-            };
+          filteredPatients.map((patient, index) => {           
 
             const age = calculateAge(patient.dateofbirth);
 
