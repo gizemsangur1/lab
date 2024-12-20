@@ -10,48 +10,55 @@ import {
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { firestore } from "../../FirebaseConfig";
 import { calculateAge, formatDate } from "../../actions/generalFunctions";
+import Icon from 'react-native-vector-icons/Ionicons';
 
 export default function ViewPatients() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredPatients, setFilteredPatients] = useState([]);
 
   const handleSearch = async () => {
-	try {
-	  const testCollection = collection(firestore, "patientTestResults");
-	  const userInfoCollection = collection(firestore, "userInfo");
-	  const querySnapshot = await getDocs(testCollection);
-  
-	  const patients = querySnapshot.docs.map((doc) => doc.data());
-  
-	  const enrichedPatients = await Promise.all(
-		patients.map(async (patient) => {
-		  const userQuery = query(userInfoCollection, where("UID", "==", patient.patientUID));
-		  const userSnapshot = await getDocs(userQuery);
-  
-		  if (!userSnapshot.empty) {
-			const userInfo = userSnapshot.docs[0].data();
-			patient.dateofbirth = userInfo.dateofbirth;
-			patient.patientSurname = userInfo.patientSurname; // Soyadı ekleniyor
-		  }
-  
-		  return patient;
-		})
-	  );
-  
-	  const filtered = enrichedPatients.filter(
-		(patient) =>
-		  (patient.patientName && patient.patientName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-		  (patient.patientSurname && patient.patientSurname.toLowerCase().includes(searchQuery.toLowerCase()))
-	  );
-  
-	  setFilteredPatients(filtered);
-	} catch (error) {
-	  console.error("Error fetching data: ", error);
-	}
-  };
-  
-  
+    try {
+      const testCollection = collection(firestore, "patientTestResults");
+      const userInfoCollection = collection(firestore, "userInfo");
+      const querySnapshot = await getDocs(testCollection);
 
+      const patients = querySnapshot.docs.map((doc) => doc.data());
+
+      const enrichedPatients = await Promise.all(
+        patients.map(async (patient) => {
+          const userQuery = query(
+            userInfoCollection,
+            where("UID", "==", patient.patientUID)
+          );
+          const userSnapshot = await getDocs(userQuery);
+
+          if (!userSnapshot.empty) {
+            const userInfo = userSnapshot.docs[0].data();
+            patient.dateofbirth = userInfo.dateofbirth;
+            patient.patientSurname = userInfo.patientSurname; // Soyadı ekleniyor
+          }
+
+          return patient;
+        })
+      );
+
+      const filtered = enrichedPatients.filter(
+        (patient) =>
+          (patient.patientName &&
+            patient.patientName
+              .toLowerCase()
+              .includes(searchQuery.toLowerCase())) ||
+          (patient.patientSurname &&
+            patient.patientSurname
+              .toLowerCase()
+              .includes(searchQuery.toLowerCase()))
+      );
+
+      setFilteredPatients(filtered);
+    } catch (error) {
+      console.error("Error fetching data: ", error);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -66,8 +73,7 @@ export default function ViewPatients() {
       </TouchableOpacity>
       <ScrollView style={styles.scrollView}>
         {filteredPatients.length > 0 ? (
-          filteredPatients.map((patient, index) => {           
-
+          filteredPatients.map((patient, index) => {
             const age = calculateAge(patient.dateofbirth);
 
             return (
@@ -75,21 +81,39 @@ export default function ViewPatients() {
                 <Text style={styles.patientName}>
                   Name: {patient.patientName}
                 </Text>
-               {/*  <Text style={styles.patientInfo}>
+                {/*  <Text style={styles.patientInfo}>
                   Date of Birth: {formatDate(patient.dateofbirth)}
                 </Text> */}
-                <Text style={styles.patientInfo}>Date of Test:  {formatDate(patient.dateofTest)}</Text>
+                <Text style={styles.patientInfo}>
+                  Date of Test: {formatDate(patient.dateofTest)}
+                </Text>
                 <Text style={styles.patientInfo}>Age: {age}</Text>
-                <Text style={styles.patientInfo}>Test Results:</Text>
-                {patient.results &&
+                <View style={styles.table}>
+                  <View style={styles.row}>
+                    <Text style={styles.headerText}>Test Results:</Text>
+                    <Text style={styles.headerText}>Ap</Text>
+                    <Text style={styles.headerText}>Cilv</Text>
+                    <Text style={styles.headerText}>Tjp</Text>
+                  </View>
+                  {patient.results &&
                 Array.isArray(patient.results) &&
                 patient.results.length > 0 ? (
                   patient.results.map((result, resultIndex) => (
                     <View key={resultIndex} style={styles.testResultContainer}>
                       {Object.entries(result).map(([key, value]) => (
-                        <Text key={key} style={styles.testResultItem}>
+                         <View style={styles.row} key={key}>
+                        {/*  <Text style={styles.headerText}>Test Results:</Text>
+                         <Text style={styles.headerText}>Ap</Text>
+                         <Text style={styles.headerText}>Cilv</Text>
+                         <Text style={styles.headerText}>Tjp</Text> */}
+                         <Text  style={styles.testResultItem}>
                           {key}: {value || "N/A"}
                         </Text>
+                        <Icon name="arrow-up-outline"/>
+                        <Icon name="arrow-down-outline"/>
+                        <Icon name="arrow-back-outline"/>
+                       </View>
+                       
                       ))}
                     </View>
                   ))
@@ -98,6 +122,7 @@ export default function ViewPatients() {
                     No test results available.
                   </Text>
                 )}
+                </View>
               </View>
             );
           })
@@ -161,5 +186,28 @@ const styles = StyleSheet.create({
     color: "#888",
     textAlign: "center",
     marginTop: 20,
+  },
+  table: {
+    width: "100%",
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: "#000",
+    borderRadius: 5,
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
+  },
+  headerText: {
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  cellText: {
+    fontSize: 14,
+    color: "#555",
   },
 });
