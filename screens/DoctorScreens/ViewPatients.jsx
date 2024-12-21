@@ -35,7 +35,7 @@ export default function ViewPatients() {
           if (!userSnapshot.empty) {
             const userInfo = userSnapshot.docs[0].data();
             patient.dateofbirth = userInfo.dateofbirth;
-            patient.patientSurname = userInfo.patientSurname; // Soyadı ekleniyor
+            patient.patientSurname = userInfo.patientSurname; 
           }
 
           return patient;

@@ -15,7 +15,9 @@ export default function DoctorMainScreen() {
             </TouchableOpacity>
           </View>
           <View style={styles.item}>
+          <TouchableOpacity onPress={() => navigation.navigate("DataEntry")}>
             <Text>Veri Girişi</Text>
+          </TouchableOpacity>
           </View>
         </View>
 

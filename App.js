@@ -6,6 +6,7 @@ import ViewPatients from './screens/DoctorScreens/ViewPatients';
 import DoctorMainScreen from './screens/DoctorScreens/DoctorMainScreen';
 import CreateGuide from './screens/DoctorScreens/CreateGuide';
 import TestResults from './screens/UserScreens/TestResults';
+import DataEntry from './screens/DoctorScreens/DataEntry';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 
@@ -22,7 +23,7 @@ export default function App() {
         <Stack.Screen name="ViewPatients" component={ViewPatients} />
         <Stack.Screen name="CreateGuide" component={CreateGuide} />
         <Stack.Screen name="TestResults" component={TestResults} />
-
+        <Stack.Screen name="DataEntry" component={DataEntry} />
 
       </Stack.Navigator>
     </NavigationContainer>
