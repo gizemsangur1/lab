@@ -1,33 +1,52 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  Text,
-  TextInput,
   View,
+  Text,
+  FlatList,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
+  TextInput,
 } from "react-native";
-import { collection, getDocs, query, where } from "firebase/firestore";
-import { firestore } from "../../FirebaseConfig";
-import { calculateAge, formatDate } from "../../actions/generalFunctions";
-import Icon from 'react-native-vector-icons/Ionicons';
 import apJson from "../../json/ap.json";
 import cilvJson from "../../json/cilv.json";
 import tjpJson from "../../json/tjp.json";
+import Icon from "react-native-vector-icons/Ionicons";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { firestore } from "../../FirebaseConfig";
 
-export default function ViewPatients() {
+
+const calculateAge = (birthday) => {
+  const birthDate = new Date(birthday);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDifference = today.getMonth() - birthDate.getMonth();
+  if (
+    monthDifference < 0 ||
+    (monthDifference === 0 && today.getDate() < birthDate.getDate())
+  ) {
+    age--;
+  }
+  return age;
+};
+
+
+const checkValueStatus = (value, min, max) => {
+  if (value < min)
+    return <Icon name="arrow-down-outline" size={20} color="red" />;
+  if (value > max)
+    return <Icon name="arrow-up-outline" size={20} color="green" />;
+  return <Icon name="arrow-forward-outline" size={20} color="blue" />;
+};
+
+const ViewPatients = () => {
+  const [jsonData, setJsonData] = useState({ ap: null, cilv: null, tjp: null });
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredPatients, setFilteredPatients] = useState([]);
-  const getIndicator = (value, type) => {
-    const limits = type === "Ap" ? apJson : type === "Cilv" ? cilvJson : tjpJson;
-    if (value < limits.min) {
-      return { icon: "arrow-down-outline", color: "red" };
-    } else if (value > limits.max) {
-      return { icon: "arrow-up-outline", color: "green" };
-    } else {
-      return { icon: "arrow-forward-outline", color: "blue" };
-    }
-  };
+
+  useEffect(() => {
+    setJsonData({tjp:tjpJson,ap:apJson,cilv:cilvJson });
+  }, []);
+
 
   const handleSearch = async () => {
     try {
@@ -48,7 +67,7 @@ export default function ViewPatients() {
           if (!userSnapshot.empty) {
             const userInfo = userSnapshot.docs[0].data();
             patient.dateofbirth = userInfo.dateofbirth;
-            patient.patientSurname = userInfo.patientSurname; 
+            patient.patientSurname = userInfo.patientSurname;
           }
 
           return patient;
@@ -73,6 +92,62 @@ export default function ViewPatients() {
     }
   };
 
+
+  const renderPatientItem = ({ item }) => {
+    const ageMonths = calculateAge(item.birthday) * 12;
+    const results = item.results[0];
+
+    return (
+      <View style={styles.card}>
+        <Text style={styles.title}>
+          {`${item.patientName} ${item.patientSurname}`}
+        </Text>
+        <Text>{`Age: ${ageMonths} months`}</Text>
+        {Object.keys(jsonData).map((source) => {
+            const sourceData = jsonData[source];
+            if (!sourceData) {
+              console.log(`No data for source: ${source}`);
+              return null; 
+            }
+          return(
+          
+          <View key={source}>
+            <Text style={styles.sourceTitle}>{`Source: ${source}`}</Text>
+            {Object.keys(results).map((hormone) => {
+              const value = parseFloat(results[hormone]);
+              const hormoneRanges = jsonData[source]?.[hormone];
+         
+              
+              if (!hormoneRanges) return null;
+
+              return hormoneRanges.map((range, idx) => {
+                if (
+                  ageMonths >= range.min_age_month &&
+                  (range.max_age_month === null ||
+                    ageMonths <= range.max_age_month)
+                ) {
+                  const status = checkValueStatus(
+                    value,
+                    range.min_val,
+                    range.max_val
+                  );
+              
+                  return (
+                    <View key={idx} style={styles.row}>
+                      <Text>{`${hormone}: ${value}`}</Text><Text>{source}</Text>
+                      {status}
+                    </View>
+                  );
+                }
+                return null;
+              });
+            })}
+          </View>
+        )})}
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <TextInput
@@ -82,142 +157,65 @@ export default function ViewPatients() {
         value={searchQuery}
       />
       <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
-        <Text style={styles.buttonText}>Ara</Text>
+        <Text style={styles.buttonText}>Search</Text>
       </TouchableOpacity>
-      <ScrollView style={styles.scrollView}>
-        {filteredPatients.length > 0 ? (
-          filteredPatients.map((patient, index) => {
-            const age = calculateAge(patient.dateofbirth);
-
-            return (
-              <View key={index} style={styles.patientItem}>
-                <Text style={styles.patientName}>
-                  Name: {patient.patientName}
-                </Text>
-                <Text style={styles.patientInfo}>
-                  Date of Test: {formatDate(patient.dateofTest)}
-                </Text>
-                <Text style={styles.patientInfo}>Age: {age}</Text>
-                <View style={styles.table}>
-                  <View style={styles.row}>
-                    <Text style={styles.headerText}>Test Results:</Text>
-                    <Text style={styles.headerText}>Ap</Text>
-                    <Text style={styles.headerText}>Cilv</Text>
-                    <Text style={styles.headerText}>Tjp</Text>
-                  </View>
-                  {patient.results &&
-                  Array.isArray(patient.results) &&
-                  patient.results.length > 0 ? (
-                    patient.results.map((result, resultIndex) => (
-                      <View key={resultIndex} style={styles.testResultContainer}>
-                        {Object.entries(result).map(([key, value]) => {
-                          const indicator = getIndicator(value, key);
-                          return (
-                            <View style={styles.row} key={key}>
-                              <Text style={styles.testResultItem}>
-                                {key}: {value || "N/A"}
-                              </Text>
-                              <Icon
-                                name={indicator.icon}
-                                size={20}
-                                color={indicator.color}
-                                style={{ marginLeft: 10 }}
-                              />
-                            </View>
-                          );
-                        })}
-                      </View>
-                    ))
-                  ) : (
-                    <Text style={styles.patientInfo}>No test results available.</Text>
-                  )}
-
-                </View>
-              </View>
-            );
-          })
-        ) : (
-          <Text style={styles.noResultsText}>No results found.</Text>
-        )}
-      </ScrollView>
+      <FlatList
+        data={filteredPatients}
+        keyExtractor={(item, index) => `${item.patientUID}-${index}`}
+        renderItem={renderPatientItem}
+      />
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
+    padding: 10,
   },
   textInput: {
-    width: "80%",
-    height: 45,
-    borderRadius: 7,
     borderWidth: 1,
     borderColor: "#ccc",
-    marginTop: 15,
-    paddingHorizontal: 10,
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 10,
   },
   searchButton: {
-    width: "80%",
-    height: 45,
-    marginTop: 15,
-    borderRadius: 7,
     backgroundColor: "#007BFF",
+    padding: 10,
+    borderRadius: 5,
     alignItems: "center",
-    justifyContent: "center",
+    marginBottom: 20,
   },
   buttonText: {
     color: "#fff",
-    fontSize: 16,
     fontWeight: "bold",
   },
-  scrollView: {
-    flex: 1,
-    width: "100%",
-    marginTop: 15,
-  },
-  patientItem: {
+  card: {
+    backgroundColor: "#f9f9f9",
+    marginVertical: 10,
     padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
+    borderRadius: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
   },
-  patientName: {
+  title: {
     fontSize: 18,
     fontWeight: "bold",
+    marginBottom: 5,
   },
-  patientInfo: {
+  sourceTitle: {
     fontSize: 16,
-    color: "#555",
-  },
-  noResultsText: {
-    fontSize: 16,
-    color: "#888",
-    textAlign: "center",
-    marginTop: 20,
-  },
-  table: {
-    width: "100%",
+    fontWeight: "bold",
     marginTop: 10,
-    borderWidth: 1,
-    borderColor: "#000",
-    borderRadius: 5,
   },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
+    marginVertical: 5,
   },
-  headerText: {
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  cellText: {
-    fontSize: 14,
-    color: "#555",
-  },
-});  
+});
+
+export default ViewPatients;
