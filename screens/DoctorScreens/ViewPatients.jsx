@@ -11,10 +11,23 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { firestore } from "../../FirebaseConfig";
 import { calculateAge, formatDate } from "../../actions/generalFunctions";
 import Icon from 'react-native-vector-icons/Ionicons';
+import apJson from "../../json/ap.json";
+import cilvJson from "../../json/cilv.json";
+import tjpJson from "../../json/tjp.json";
 
 export default function ViewPatients() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredPatients, setFilteredPatients] = useState([]);
+  const getIndicator = (value, type) => {
+    const limits = type === "Ap" ? apJson : type === "Cilv" ? cilvJson : tjpJson;
+    if (value < limits.min) {
+      return { icon: "arrow-down-outline", color: "red" };
+    } else if (value > limits.max) {
+      return { icon: "arrow-up-outline", color: "green" };
+    } else {
+      return { icon: "arrow-forward-outline", color: "blue" };
+    }
+  };
 
   const handleSearch = async () => {
     try {
@@ -81,9 +94,6 @@ export default function ViewPatients() {
                 <Text style={styles.patientName}>
                   Name: {patient.patientName}
                 </Text>
-                {/*  <Text style={styles.patientInfo}>
-                  Date of Birth: {formatDate(patient.dateofbirth)}
-                </Text> */}
                 <Text style={styles.patientInfo}>
                   Date of Test: {formatDate(patient.dateofTest)}
                 </Text>
@@ -96,32 +106,32 @@ export default function ViewPatients() {
                     <Text style={styles.headerText}>Tjp</Text>
                   </View>
                   {patient.results &&
-                Array.isArray(patient.results) &&
-                patient.results.length > 0 ? (
-                  patient.results.map((result, resultIndex) => (
-                    <View key={resultIndex} style={styles.testResultContainer}>
-                      {Object.entries(result).map(([key, value]) => (
-                         <View style={styles.row} key={key}>
-                        {/*  <Text style={styles.headerText}>Test Results:</Text>
-                         <Text style={styles.headerText}>Ap</Text>
-                         <Text style={styles.headerText}>Cilv</Text>
-                         <Text style={styles.headerText}>Tjp</Text> */}
-                         <Text  style={styles.testResultItem}>
-                          {key}: {value || "N/A"}
-                        </Text>
-                        <Icon name="arrow-up-outline"/>
-                        <Icon name="arrow-down-outline"/>
-                        <Icon name="arrow-back-outline"/>
-                       </View>
-                       
-                      ))}
-                    </View>
-                  ))
-                ) : (
-                  <Text style={styles.patientInfo}>
-                    No test results available.
-                  </Text>
-                )}
+                  Array.isArray(patient.results) &&
+                  patient.results.length > 0 ? (
+                    patient.results.map((result, resultIndex) => (
+                      <View key={resultIndex} style={styles.testResultContainer}>
+                        {Object.entries(result).map(([key, value]) => {
+                          const indicator = getIndicator(value, key);
+                          return (
+                            <View style={styles.row} key={key}>
+                              <Text style={styles.testResultItem}>
+                                {key}: {value || "N/A"}
+                              </Text>
+                              <Icon
+                                name={indicator.icon}
+                                size={20}
+                                color={indicator.color}
+                                style={{ marginLeft: 10 }}
+                              />
+                            </View>
+                          );
+                        })}
+                      </View>
+                    ))
+                  ) : (
+                    <Text style={styles.patientInfo}>No test results available.</Text>
+                  )}
+
                 </View>
               </View>
             );
@@ -210,4 +220,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#555",
   },
-});
+});  
