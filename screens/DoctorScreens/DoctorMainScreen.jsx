@@ -10,8 +10,8 @@ export default function DoctorMainScreen() {
         {/* 1. Satır */}
         <View style={styles.row}>
           <View style={styles.item}>
-            <TouchableOpacity onPress={() => navigation.navigate("CreateGuide")}>
-              <Text>Kılavuz Oluşturma</Text>
+            <TouchableOpacity onPress={() => navigation.navigate("Guides")}>
+              <Text>Kılavuz</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.item}>

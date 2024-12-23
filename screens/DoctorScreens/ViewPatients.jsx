@@ -42,6 +42,7 @@ const ViewPatients = () => {
   const [jsonData, setJsonData] = useState({ ap: null, cilv: null, tjp: null });
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredPatients, setFilteredPatients] = useState([]);
+  const[guides,setGuides]=useState([]);
 
   useEffect(() => {
     setJsonData({tjp:tjpJson,ap:apJson,cilv:cilvJson });
@@ -51,8 +52,13 @@ const ViewPatients = () => {
   const handleSearch = async () => {
     try {
       const testCollection = collection(firestore, "patientTestResults");
+      const jsonCollection = collection(firestore, "guides");
       const userInfoCollection = collection(firestore, "userInfo");
       const querySnapshot = await getDocs(testCollection);
+      const guidesQuerySnapshot = await getDocs(jsonCollection);
+      const guides = guidesQuerySnapshot.docs.map((doc) => doc.data());
+      setGuides(guides)
+      console.log(guides)
 
       const patients = querySnapshot.docs.map((doc) => doc.data());
 
@@ -103,8 +109,10 @@ const ViewPatients = () => {
           {`${item.patientName} ${item.patientSurname}`}
         </Text>
         <Text>{`Age: ${ageMonths} months`}</Text>
-        {Object.keys(jsonData).map((source) => {
-            const sourceData = jsonData[source];
+        {/* guides yerine jsonData sourceData.title yerine de source yazılırsa klasördeki json dosyalarını okuyor. */}
+        {Object.keys(guides).map((source) => {
+            const sourceData = guides[source];
+            console.log("sourcedata",sourceData)
             if (!sourceData) {
               console.log(`No data for source: ${source}`);
               return null; 
@@ -112,10 +120,10 @@ const ViewPatients = () => {
           return(
           
           <View key={source}>
-            <Text style={styles.sourceTitle}>{`Source: ${source}`}</Text>
+            <Text style={styles.sourceTitle}>{`Source: ${sourceData.title}`}</Text>
             {Object.keys(results).map((hormone) => {
               const value = parseFloat(results[hormone]);
-              const hormoneRanges = jsonData[source]?.[hormone];
+              const hormoneRanges = guides[source]?.[hormone];
          
               
               if (!hormoneRanges) return null;
@@ -134,7 +142,7 @@ const ViewPatients = () => {
               
                   return (
                     <View key={idx} style={styles.row}>
-                      <Text>{`${hormone}: ${value}`}</Text><Text>{source}</Text>
+                      <Text>{`${hormone}: ${value}`}</Text><Text>{sourceData.title}</Text>
                       {status}
                     </View>
                   );
