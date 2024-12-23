@@ -1,172 +1,159 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useEffect, useState } from "react";
 import {
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
   View,
+  Text,
+  StyleSheet,
+  ScrollView,
 } from "react-native";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { firestore } from "../../FirebaseConfig";
-import { calculateAge, formatDate } from "../../actions/generalFunctions";
+import Icon from "react-native-vector-icons/Ionicons";
 
-export default function TestResults() {
-  const [user, setUser] = useState([]);
-  const [filteredPatients, setFilteredPatients] = useState([]);
-  const [refreshing, setRefreshing] = useState(false);
+// Yaş hesaplama fonksiyonu
+const calculateAge = (birthday) => {
+  const birthDate = new Date(birthday);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDifference = today.getMonth() - birthDate.getMonth();
+  if (
+    monthDifference < 0 ||
+    (monthDifference === 0 && today.getDate() < birthDate.getDate())
+  ) {
+    age--;
+  }
+  return age;
+};
 
-  const onRefresh = React.useCallback(async () => {
-    setRefreshing(true);
-    await userTestResults(); 
-    setRefreshing(false);
-  }, [user]); 
+// Değer durum kontrol fonksiyonu
+const checkValueStatus = (value, min, max) => {
+  if (value < min)
+    return <Icon name="arrow-down-outline" size={20} color="red" />;
+  if (value > max)
+    return <Icon name="arrow-up-outline" size={20} color="green" />;
+  return <Icon name="arrow-forward-outline" size={20} color="blue" />;
+};
 
-  const getUser = async () => {
-    try {
-      const userData = await AsyncStorage.getItem("userData");
-      if (userData) {
-        setUser(JSON.parse(userData));
-      }
-    } catch (error) {
-      console.error("Kullanıcı bilgisi alınırken hata:", error);
-    }
-  };
+const TestResultsTable = () => {
+  const [patients, setPatients] = useState([]);
+  const [guides, setGuides] = useState([]);
 
-  const userTestResults = async () => {
-    try {
-      const testCollection = collection(firestore, "patientTestResults");
-      const userInfoCollection = collection(firestore, "userInfo");
-      const querySnapshot = await getDocs(testCollection);
-
-      const patients = querySnapshot.docs.map((doc) => doc.data());
-
-      const enrichedPatients = await Promise.all(
-        patients.map(async (patient) => {
-          const userQuery = query(
-            userInfoCollection,
-            where("UID", "==", patient.patientUID)
-          );
-          const userSnapshot = await getDocs(userQuery);
-
-          if (!userSnapshot.empty) {
-            const userInfo = userSnapshot.docs[0].data();
-            patient.dateofbirth = userInfo.dateofbirth;
-            patient.patientSurname = userInfo.patientSurname;
-          }
-
-          return patient;
-        })
-      );
-
-      const filtered = enrichedPatients.filter(
-        (patient) =>
-          (patient.patientName &&
-            user.name &&
-            patient.patientName
-              .toLowerCase()
-              .includes(user.name.toLowerCase())) ||
-          (patient.patientSurname &&
-            user.surname &&
-            patient.patientSurname
-              .toLowerCase()
-              .includes(user.surname.toLowerCase()))
-      );
-
-      setFilteredPatients(filtered);
-    } catch (error) {
-      console.error("Error fetching data: ", error);
-    }
-  };
-
+  // Verileri çekme
   useEffect(() => {
-    getUser();
+    const fetchData = async () => {
+      try {
+        const testCollection = collection(firestore, "patientTestResults");
+        const guidesCollection = collection(firestore, "guides");
+        const userInfoCollection = collection(firestore, "userInfo");
+
+        // Rehber verilerini çek
+        const guidesSnapshot = await getDocs(guidesCollection);
+        const guidesData = guidesSnapshot.docs.map((doc) => doc.data());
+        setGuides(guidesData);
+
+        // Hasta verilerini çek
+        const testSnapshot = await getDocs(testCollection);
+        const patientsData = testSnapshot.docs.map((doc) => doc.data());
+
+        const enrichedPatients = await Promise.all(
+          patientsData.map(async (patient) => {
+            const userQuery = query(
+              userInfoCollection,
+              where("UID", "==", patient.patientUID)
+            );
+            const userSnapshot = await getDocs(userQuery);
+
+            if (!userSnapshot.empty) {
+              const userInfo = userSnapshot.docs[0].data();
+              patient.dateofbirth = userInfo.dateofbirth;
+              patient.patientSurname = userInfo.patientSurname;
+            }
+
+            return patient;
+          })
+        );
+
+        setPatients(enrichedPatients);
+      } catch (error) {
+        console.error("Error fetching data: ", error);
+      }
+    };
+
+    fetchData();
   }, []);
 
-  useEffect(() => {
-    if (user.name && user.surname) {
-      userTestResults();
-    }
-  }, [user]);
-
   return (
-    <View style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        {filteredPatients.length > 0 ? (
-          filteredPatients.map((patient, index) => {
-            const age = calculateAge(patient.dateofbirth);
+    <ScrollView style={styles.container}>
+      <View style={styles.table}>
+        <View style={styles.tableHeader}>
+          <Text style={[styles.cell, styles.headerCell]}>Name</Text>
+          <Text style={[styles.cell, styles.headerCell]}>Age (Months)</Text>
+          <Text style={[styles.cell, styles.headerCell]}>Hormone</Text>
+          <Text style={[styles.cell, styles.headerCell]}>Value</Text>
+          <Text style={[styles.cell, styles.headerCell]}>Status</Text>
+        </View>
 
-            return (
-              <View key={index} style={styles.patientItem}>
-                <Text style={styles.patientName}>
-                  Name: {patient.patientName}
-                </Text>
-                <Text style={styles.patientInfo}>
-                  Date of Test: {formatDate(patient.dateofTest)}
-                </Text>
-                <Text style={styles.patientInfo}>Age: {age}</Text>
-                <Text style={styles.patientInfo}>Test Results:</Text>
-                {patient.results &&
-                Array.isArray(patient.results) &&
-                patient.results.length > 0 ? (
-                  patient.results.map((result, resultIndex) => (
-                    <View key={resultIndex} style={styles.testResultContainer}>
-                      {Object.entries(result).map(([key, value]) => (
-                        <Text key={key} style={styles.testResultItem}>
-                          {key}: {value || "N/A"}
-                        </Text>
-                      ))}
-                    </View>
-                  ))
-                ) : (
-                  <Text style={styles.patientInfo}>
-                    No test results available.
-                  </Text>
-                )}
-              </View>
-            );
-          })
-        ) : (
-          <Text style={styles.noResultsText}>No results found.</Text>
-        )}
-      </ScrollView>
-    </View>
+        {patients.map((patient, index) => {
+          const ageMonths = calculateAge(patient.dateofbirth) * 12;
+
+          return (
+            <View key={index}>
+              {patient.results.map((result, idx) => (
+                Object.entries(result).map(([hormone, value]) => (
+                  <View key={`${index}-${idx}-${hormone}`} style={styles.tableRow}>
+                    <Text style={[styles.cell, styles.nameCell]}>
+                      {`${patient.patientName} ${patient.patientSurname}`}
+                    </Text>
+                    <Text style={styles.cell}>{ageMonths}</Text>
+                    <Text style={styles.cell}>{hormone}</Text>
+                    <Text style={styles.cell}>{value}</Text>
+                    <Text style={styles.cell}>
+                      {checkValueStatus(value, 0, 100)} {/* Min/Max Değerlerini Değiştir */}
+                    </Text>
+                  </View>
+                ))
+              ))}
+            </View>
+          );
+        })}
+      </View>
+    </ScrollView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
-    alignItems: "center",
+    padding: 10,
   },
-  scrollView: {
-    flex: 1,
-    width: "100%",
-    marginTop: 15,
+  table: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
   },
-  patientItem: {
-    padding: 15,
+  tableHeader: {
+    flexDirection: "row",
+    backgroundColor: "#f1f1f1",
     borderBottomWidth: 1,
     borderBottomColor: "#ccc",
   },
-  patientName: {
-    fontSize: 18,
-    fontWeight: "bold",
+  tableRow: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
   },
-  patientInfo: {
-    fontSize: 16,
-    color: "#555",
-  },
-  noResultsText: {
-    fontSize: 16,
-    color: "#888",
+  cell: {
+    flex: 1,
+    padding: 10,
     textAlign: "center",
-    marginTop: 20,
+  },
+  headerCell: {
+    fontWeight: "bold",
+    backgroundColor: "#ddd",
+  },
+  nameCell: {
+    flex: 2,
   },
 });
+
+export default TestResultsTable;
