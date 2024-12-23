@@ -1,7 +1,10 @@
+import { useNavigation } from '@react-navigation/native';
 import React from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 export default function Guides() {
+	  const navigation = useNavigation();
+	
   return (
 	<View style={styles.container}>
 		  <ScrollView style={styles.scrollView}>
@@ -12,7 +15,7 @@ export default function Guides() {
 				</TouchableOpacity>
 			  </View>
 			  <View style={styles.item}>
-			  <TouchableOpacity >
+			  <TouchableOpacity onPress={() => navigation.navigate("ListGuides")}>
 				<Text>Kılavuz Düzenle</Text>
 			  </TouchableOpacity>
 			  </View>
