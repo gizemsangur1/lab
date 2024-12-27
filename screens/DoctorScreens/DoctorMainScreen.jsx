@@ -29,7 +29,9 @@ export default function DoctorMainScreen() {
           </TouchableOpacity>
           </View>
           <View style={styles.item}>
-            <Text>Tahlilleri Listele</Text>
+          <TouchableOpacity onPress={() => navigation.navigate("CompareData")}>
+            <Text> Compare Data</Text>
+          </TouchableOpacity>
           </View>
         </View>
       </ScrollView>

@@ -150,9 +150,11 @@ const styles = StyleSheet.create({
   headerCell: {
     fontWeight: "bold",
     backgroundColor: "#ddd",
+    textAlign: "center",
   },
   nameCell: {
     flex: 2,
+    textAlign: "left",
   },
 });
 

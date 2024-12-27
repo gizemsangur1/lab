@@ -11,13 +11,14 @@ import TestResults from './screens/UserScreens/TestResults';
 import DataEntry from './screens/DoctorScreens/DataEntry';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import CompareData from './screens/DoctorScreens/CompareData';
 
 const Stack = createStackNavigator();
 
 export default function App() {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Login">
+      <Stack.Navigator initialRouteName="DoctorScreen">
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
         <Stack.Screen name="UserMain" component={UserMain} />
@@ -28,6 +29,7 @@ export default function App() {
         <Stack.Screen name="Guides" component={Guides} />
         <Stack.Screen name="TestResults" component={TestResults} />
         <Stack.Screen name="DataEntry" component={DataEntry} />
+        <Stack.Screen name="CompareData" component={CompareData} />
 
       </Stack.Navigator>
     </NavigationContainer>
