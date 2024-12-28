@@ -160,6 +160,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     backgroundColor: "#f9f9f9",
+    overflow: "scroll",
   },
   header: {
     fontSize: 24,

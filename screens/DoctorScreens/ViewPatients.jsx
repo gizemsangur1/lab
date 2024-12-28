@@ -14,7 +14,6 @@ import Icon from "react-native-vector-icons/Ionicons";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { firestore } from "../../FirebaseConfig";
 
-
 const calculateAge = (birthday) => {
   const birthDate = new Date(birthday);
   const today = new Date();
@@ -29,7 +28,6 @@ const calculateAge = (birthday) => {
   return age;
 };
 
-
 const checkValueStatus = (value, min, max) => {
   if (value < min)
     return <Icon name="arrow-down-outline" size={20} color="red" />;
@@ -38,16 +36,22 @@ const checkValueStatus = (value, min, max) => {
   return <Icon name="arrow-forward-outline" size={20} color="blue" />;
 };
 
+const compareWithPrevious = (current, previous) => {
+  if (previous === null || previous === undefined) return "No previous data";
+  if (current > previous) return "Increased";
+  if (current < previous) return "Decreased";
+  return "Unchanged";
+};
+
 const ViewPatients = () => {
   const [jsonData, setJsonData] = useState({ ap: null, cilv: null, tjp: null });
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredPatients, setFilteredPatients] = useState([]);
-  const[guides,setGuides]=useState([]);
+  const [guides, setGuides] = useState([]);
 
   useEffect(() => {
-    setJsonData({tjp:tjpJson,ap:apJson,cilv:cilvJson });
+    setJsonData({ tjp: tjpJson, ap: apJson, cilv: cilvJson });
   }, []);
-
 
   const handleSearch = async () => {
     try {
@@ -57,8 +61,7 @@ const ViewPatients = () => {
       const querySnapshot = await getDocs(testCollection);
       const guidesQuerySnapshot = await getDocs(jsonCollection);
       const guides = guidesQuerySnapshot.docs.map((doc) => doc.data());
-      setGuides(guides)
-      console.log(guides)
+      setGuides(guides);
 
       const patients = querySnapshot.docs.map((doc) => doc.data());
 
@@ -98,10 +101,10 @@ const ViewPatients = () => {
     }
   };
 
-
   const renderPatientItem = ({ item }) => {
     const ageMonths = calculateAge(item.birthday) * 12;
     const results = item.results[0];
+    const previousResults = item.previousResults || {}; // Önceki sonuçlar için varsayılan yapı
 
     return (
       <View style={styles.card}>
@@ -109,49 +112,47 @@ const ViewPatients = () => {
           {`${item.patientName} ${item.patientSurname}`}
         </Text>
         <Text>{`Age: ${ageMonths} months`}</Text>
-        {/* guides yerine jsonData sourceData.title yerine de source yazılırsa klasördeki json dosyalarını okuyor. */}
         {Object.keys(guides).map((source) => {
-            const sourceData = guides[source];
-            console.log("sourcedata",sourceData)
-            if (!sourceData) {
-              console.log(`No data for source: ${source}`);
-              return null; 
-            }
-          return(
-          
-          <View key={source}>
-            <Text style={styles.sourceTitle}>{`Source: ${sourceData.title}`}</Text>
-            {Object.keys(results).map((hormone) => {
-              const value = parseFloat(results[hormone]);
-              const hormoneRanges = guides[source]?.[hormone];
-         
-              
-              if (!hormoneRanges) return null;
+          const sourceData = guides[source];
+          if (!sourceData) return null;
 
-              return hormoneRanges.map((range, idx) => {
-                if (
-                  ageMonths >= range.min_age_month &&
-                  (range.max_age_month === null ||
-                    ageMonths <= range.max_age_month)
-                ) {
-                  const status = checkValueStatus(
-                    value,
-                    range.min_val,
-                    range.max_val
-                  );
-              
-                  return (
-                    <View key={idx} style={styles.row}>
-                      <Text>{`${hormone}: ${value}`}</Text><Text>{sourceData.title}</Text>
-                      {status}
-                    </View>
-                  );
-                }
-                return null;
-              });
-            })}
-          </View>
-        )})}
+          return (
+            <View key={source}>
+              <Text style={styles.sourceTitle}>{`Source: ${sourceData.title}`}</Text>
+              {Object.keys(results).map((hormone) => {
+                const value = parseFloat(results[hormone]);
+                const previousValue = parseFloat(previousResults[hormone]);
+                const hormoneRanges = guides[source]?.[hormone];
+
+                if (!hormoneRanges) return null;
+
+                return hormoneRanges.map((range, idx) => {
+                  if (
+                    ageMonths >= range.min_age_month &&
+                    (range.max_age_month === null ||
+                      ageMonths <= range.max_age_month)
+                  ) {
+                    const status = checkValueStatus(
+                      value,
+                      range.min_val,
+                      range.max_val
+                    );
+                    const comparison = compareWithPrevious(value, previousValue);
+
+                    return (
+                      <View key={idx} style={styles.row}>
+                        <Text>{`${hormone}: ${value}`}</Text>
+                        {status}
+                        <Text style={styles.comparison}>{` (${comparison})`}</Text>
+                      </View>
+                    );
+                  }
+                  return null;
+                });
+              })}
+            </View>
+          );
+        })}
       </View>
     );
   };
@@ -223,6 +224,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginVertical: 5,
+  },
+  comparison: {
+    marginLeft: 10,
+    fontStyle: "italic",
+    color: "#888",
   },
 });
 
