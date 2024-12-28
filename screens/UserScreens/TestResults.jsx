@@ -1,13 +1,9 @@
 import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-} from "react-native";
+import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { firestore } from "../../FirebaseConfig";
 import Icon from "react-native-vector-icons/Ionicons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Yaş hesaplama fonksiyonu
 const calculateAge = (birthday) => {
@@ -36,8 +32,23 @@ const checkValueStatus = (value, min, max) => {
 const TestResultsTable = () => {
   const [patients, setPatients] = useState([]);
   const [guides, setGuides] = useState([]);
+  const [user, setUser] = useState([]);
+  const [filteredPatients, setFilteredPatients] = useState([]);
 
-  // Verileri çekme
+  useEffect(() => {
+    const getUser = async () => {
+      try {
+        const userData = await AsyncStorage.getItem("userData");
+        if (userData) {
+          setUser(JSON.parse(userData));
+        }
+      } catch (error) {
+        console.error("Kullanıcı bilgisi alınırken hata:", error);
+      }
+    };
+    getUser();
+  }, []);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -61,25 +72,36 @@ const TestResultsTable = () => {
               where("UID", "==", patient.patientUID)
             );
             const userSnapshot = await getDocs(userQuery);
-
             if (!userSnapshot.empty) {
               const userInfo = userSnapshot.docs[0].data();
               patient.dateofbirth = userInfo.dateofbirth;
               patient.patientSurname = userInfo.patientSurname;
             }
-
             return patient;
           })
         );
 
         setPatients(enrichedPatients);
+
+        // Filter the patients after they have been set
+        const filtered = enrichedPatients.filter(
+          (patient) =>
+            (patient.patientName &&
+              patient.patientName.toLowerCase().includes(user?.name?.toLowerCase())) ||
+            (patient.patientSurname &&
+              patient.patientSurname.toLowerCase().includes(user?.surname?.toLowerCase()))
+        );
+
+        setFilteredPatients(filtered);
       } catch (error) {
         console.error("Error fetching data: ", error);
       }
     };
 
     fetchData();
-  }, []);
+  }, [user]);
+
+  console.log(filteredPatients);
 
   return (
     <ScrollView style={styles.container}>
@@ -92,14 +114,17 @@ const TestResultsTable = () => {
           <Text style={[styles.cell, styles.headerCell]}>Status</Text>
         </View>
 
-        {patients.map((patient, index) => {
+        {filteredPatients.map((patient, index) => {
           const ageMonths = calculateAge(patient.dateofbirth) * 12;
 
           return (
             <View key={index}>
-              {patient.results.map((result, idx) => (
+              {patient.results.map((result, idx) =>
                 Object.entries(result).map(([hormone, value]) => (
-                  <View key={`${index}-${idx}-${hormone}`} style={styles.tableRow}>
+                  <View
+                    key={`${index}-${idx}-${hormone}`}
+                    style={styles.tableRow}
+                  >
                     <Text style={[styles.cell, styles.nameCell]}>
                       {`${patient.patientName} ${patient.patientSurname}`}
                     </Text>
@@ -107,11 +132,11 @@ const TestResultsTable = () => {
                     <Text style={styles.cell}>{hormone}</Text>
                     <Text style={styles.cell}>{value}</Text>
                     <Text style={styles.cell}>
-                      {checkValueStatus(value, 0, 100)} {/* Min/Max Değerlerini Değiştir */}
+                      {checkValueStatus(value, 0, 100)}{" "}
                     </Text>
                   </View>
                 ))
-              ))}
+              )}
             </View>
           );
         })}
@@ -119,6 +144,7 @@ const TestResultsTable = () => {
     </ScrollView>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
